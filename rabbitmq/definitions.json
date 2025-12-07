@@ -1,0 +1,127 @@
+{
+  "rabbit_version": "3.13",
+  "users": [
+    {
+      "name": "admin",
+      "password_hash": "tLAGlzNPpzN3rXFZnx2vqnXVeIwqlAHRPvN9BgQzLpb0W3oZ",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {"name": "/"},
+    {"name": "govconnect"}
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "admin",
+      "vhost": "govconnect",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "whatsapp.incoming",
+      "vhost": "govconnect",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000,
+        "x-dead-letter-exchange": "dlx.govconnect"
+      }
+    },
+    {
+      "name": "ai.process",
+      "vhost": "govconnect",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "notification.send",
+      "vhost": "govconnect",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "case.update",
+      "vhost": "govconnect",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "whatsapp_events",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "govconnect.events",
+      "vhost": "govconnect",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "dlx.govconnect",
+      "vhost": "govconnect",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "govconnect.events",
+      "vhost": "govconnect",
+      "destination": "whatsapp.incoming",
+      "destination_type": "queue",
+      "routing_key": "whatsapp.#",
+      "arguments": {}
+    },
+    {
+      "source": "govconnect.events",
+      "vhost": "govconnect",
+      "destination": "ai.process",
+      "destination_type": "queue",
+      "routing_key": "ai.#",
+      "arguments": {}
+    },
+    {
+      "source": "govconnect.events",
+      "vhost": "govconnect",
+      "destination": "notification.send",
+      "destination_type": "queue",
+      "routing_key": "notification.#",
+      "arguments": {}
+    },
+    {
+      "source": "govconnect.events",
+      "vhost": "govconnect",
+      "destination": "case.update",
+      "destination_type": "queue",
+      "routing_key": "case.#",
+      "arguments": {}
+    }
+  ]
+}
