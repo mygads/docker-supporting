@@ -1,9 +1,15 @@
 # ===================================================================================
-# SUPPORTING SERVICES
+# SUPPORTING SERVICES - OPTIMIZED
 # ===================================================================================
 # 
-# RabbitMQ, Prometheus, Grafana, Loki, Promtail
-# Shared infrastructure untuk semua services
+# Core Infrastructure:
+# - RabbitMQ: Message broker (required)
+# - Prometheus: Metrics collection
+# - Grafana: Visualization dashboard
+# - Loki: Centralized logging
+# - Promtail: Log collector
+#
+# Removed: Node Exporter, cAdvisor, Alertmanager (overkill for current scale)
 #
 # USAGE:
 #   docker compose up -d                    # Start all supporting services
@@ -38,6 +44,11 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.govconnect.my.id`)"
@@ -57,15 +68,19 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
-      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.time=7d'
       - '--web.enable-admin-api'
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus-data:/prometheus
     networks:
       - infra-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.govconnect.my.id`)"
@@ -82,13 +97,14 @@ services:
     image: grafana/grafana:10.4.0
     container_name: grafana
     ports:
-      - "3100:3000"
+      - "3300:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_ROOT_URL: https://grafana.govconnect.my.id
       GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-piechart-panel
+      GF_LOG_LEVEL: warn
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -99,6 +115,11 @@ services:
       - prometheus
       - loki
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.govconnect.my.id`)"
@@ -121,6 +142,11 @@ services:
     networks:
       - infra-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
       interval: 10s
@@ -145,66 +171,11 @@ services:
       loki:
         condition: service_healthy
     restart: unless-stopped
-
-  # ===================================================================================
-  # NODE METRICS - Node Exporter
-  # ===================================================================================
-  node-exporter:
-    image: prom/node-exporter:v1.7.0
-    container_name: node-exporter
-    ports:
-      - "9100:9100"
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    networks:
-      - infra-network
-    restart: unless-stopped
-
-  # ===================================================================================
-  # CONTAINER METRICS - cAdvisor
-  # ===================================================================================
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: cadvisor
-    ports:
-      - "8081:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    networks:
-      - infra-network
-    restart: unless-stopped
-
-  # ===================================================================================
-  # ALERTING - Alertmanager
-  # ===================================================================================
-  alertmanager:
-    image: prom/alertmanager:v0.27.0
-    container_name: alertmanager
-    ports:
-      - "9093:9093"
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-    volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
-    networks:
-      - infra-network
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
 
 # ===================================================================================
 # NETWORKS
@@ -226,5 +197,3 @@ volumes:
     name: grafana-data
   loki-data:
     name: loki-data
-  alertmanager-data:
-    name: alertmanager-data
