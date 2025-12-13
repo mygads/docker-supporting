@@ -24,6 +24,7 @@ on:
       - 'loki/**'
       - 'promtail/**'
       - 'rabbitmq/**'
+      - 'pgadmin/**'
   workflow_dispatch:
 
 jobs:
@@ -59,6 +60,7 @@ jobs:
           scp -r loki $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r promtail $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r rabbitmq $VPS_USER@$VPS_HOST:/opt/apps/supporting/
+          scp -r pgadmin $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           
           # Deploy with Docker Compose
           ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
@@ -69,7 +71,7 @@ jobs:
             
             # Wait and check
             sleep 15
-            docker ps | grep -E "(grafana|prometheus|rabbitmq|loki)"
+            docker ps | grep -E "(grafana|prometheus|rabbitmq|loki|pgadmin)"
             
             echo "✅ Supporting services deployed!"
           ENDSSH
@@ -82,10 +84,11 @@ jobs:
           sleep 20
           ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
             echo "Checking services..."
-            docker ps | grep -E "(grafana|prometheus|rabbitmq|loki)"
+            docker ps | grep -E "(grafana|prometheus|rabbitmq|loki|pgadmin)"
             curl -sf http://localhost:3300/api/health && echo "✅ Grafana OK" || echo "⚠️ Grafana not ready yet"
             curl -sf http://localhost:9090/-/healthy && echo "✅ Prometheus OK" || echo "⚠️ Prometheus not ready yet"
             curl -sf http://localhost:15672 && echo "✅ RabbitMQ OK" || echo "⚠️ RabbitMQ not ready yet"
+            curl -sf http://localhost:5050 && echo "✅ pgAdmin OK" || echo "⚠️ pgAdmin not ready yet"
           ENDSSH
 
       - name: Generate summary
@@ -96,3 +99,4 @@ jobs:
           echo "- Grafana: https://grafana.genfity.com" >> $GITHUB_STEP_SUMMARY
           echo "- RabbitMQ: https://rabbitmq.genfity.com" >> $GITHUB_STEP_SUMMARY
           echo "- Prometheus: https://prometheus.genfity.com" >> $GITHUB_STEP_SUMMARY
+          echo "- pgAdmin: https://db.genfity.com" >> $GITHUB_STEP_SUMMARY
