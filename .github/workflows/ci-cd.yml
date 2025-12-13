@@ -18,7 +18,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docker-compose.swarm.yml'
+      - 'docker-compose.yml'
       - 'grafana/**'
       - 'prometheus/**'
       - 'loki/**'
@@ -45,7 +45,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy Supporting Services to Swarm
+      - name: Deploy Supporting Services
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
@@ -53,23 +53,23 @@ jobs:
           echo "🚀 Deploying Supporting Services to VPS..."
           
           # Copy all configs
-          scp docker-compose.swarm.yml $VPS_USER@$VPS_HOST:/opt/apps/supporting/
+          scp docker-compose.yml $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r grafana $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r prometheus $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r loki $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r promtail $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r rabbitmq $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           
-          # Deploy with Docker Swarm
+          # Deploy with Docker Compose
           ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
             cd /opt/apps/supporting
             
-            # Deploy/Update stack
-            docker stack deploy -c docker-compose.swarm.yml supporting
+            # Restart services with new config
+            docker compose up -d --force-recreate
             
             # Wait and check
             sleep 15
-            docker service ls | grep supporting
+            docker ps | grep -E "(grafana|prometheus|rabbitmq|loki)"
             
             echo "✅ Supporting services deployed!"
           ENDSSH
@@ -82,7 +82,7 @@ jobs:
           sleep 20
           ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
             echo "Checking services..."
-            docker service ls | grep supporting
+            docker ps | grep -E "(grafana|prometheus|rabbitmq|loki)"
             curl -sf http://localhost:3300/api/health && echo "✅ Grafana OK" || echo "⚠️ Grafana not ready yet"
             curl -sf http://localhost:9090/-/healthy && echo "✅ Prometheus OK" || echo "⚠️ Prometheus not ready yet"
             curl -sf http://localhost:15672 && echo "✅ RabbitMQ OK" || echo "⚠️ RabbitMQ not ready yet"
