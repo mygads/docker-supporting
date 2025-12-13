@@ -68,11 +68,11 @@ services:
         condition: on-failure
       resources:
         limits:
-          memory: 1G
-          cpus: '1'
-        reservations:
           memory: 512M
           cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.prometheus.rule=Host(`prometheus.govconnect.my.id`)"

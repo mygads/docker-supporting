@@ -45,7 +45,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy Supporting Services
+      - name: Deploy Supporting Services to Swarm
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
@@ -60,16 +60,11 @@ jobs:
           scp -r promtail $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           scp -r rabbitmq $VPS_USER@$VPS_HOST:/opt/apps/supporting/
           
-          # Deploy
+          # Deploy with Docker Swarm
           ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
             cd /opt/apps/supporting
             
-            # Initialize swarm if needed
-            if ! docker info | grep -q "Swarm: active"; then
-              docker swarm init --advertise-addr $(hostname -I | awk '{print $1}') || true
-            fi
-            
-            # Deploy stack
+            # Deploy/Update stack
             docker stack deploy -c docker-compose.swarm.yml supporting
             
             # Wait and check
@@ -87,9 +82,10 @@ jobs:
           sleep 20
           ssh $VPS_USER@$VPS_HOST << 'ENDSSH'
             echo "Checking services..."
-            curl -sf http://localhost:3300/api/health && echo "✅ Grafana OK" || echo "❌ Grafana FAILED"
-            curl -sf http://localhost:9090/-/healthy && echo "✅ Prometheus OK" || echo "❌ Prometheus FAILED"
-            curl -sf http://localhost:15672 && echo "✅ RabbitMQ OK" || echo "❌ RabbitMQ FAILED"
+            docker service ls | grep supporting
+            curl -sf http://localhost:3300/api/health && echo "✅ Grafana OK" || echo "⚠️ Grafana not ready yet"
+            curl -sf http://localhost:9090/-/healthy && echo "✅ Prometheus OK" || echo "⚠️ Prometheus not ready yet"
+            curl -sf http://localhost:15672 && echo "✅ RabbitMQ OK" || echo "⚠️ RabbitMQ not ready yet"
           ENDSSH
 
       - name: Generate summary
