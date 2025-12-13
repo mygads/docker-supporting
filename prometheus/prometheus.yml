@@ -15,30 +15,30 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # GovConnect Services
+  # GovConnect Services (using actual container names from docker-compose)
   - job_name: 'channel-service'
     static_configs:
-      - targets: ['gc-channel-service:3001']
+      - targets: ['govconnect-channel-service-1:3001']
     metrics_path: /metrics
 
   - job_name: 'ai-service'
     static_configs:
-      - targets: ['gc-ai-service:3002']
+      - targets: ['govconnect-ai-service-1:3002']
     metrics_path: /metrics
 
   - job_name: 'case-service'
     static_configs:
-      - targets: ['gc-case-service:3003']
+      - targets: ['govconnect-case-service-1:3003']
     metrics_path: /metrics
 
   - job_name: 'notification-service'
     static_configs:
-      - targets: ['gc-notification-service:3004']
+      - targets: ['govconnect-notification-service-1:3004']
     metrics_path: /metrics
 
   - job_name: 'dashboard'
     static_configs:
-      - targets: ['gc-dashboard:3000']
+      - targets: ['govconnect-dashboard-1:3000']
     metrics_path: /api/metrics
 
   # RabbitMQ
