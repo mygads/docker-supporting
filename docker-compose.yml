@@ -50,7 +50,7 @@ services:
           cpus: '0.5'
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.govconnect.my.id`)"
+      - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.genfity.com`)"
       - "traefik.http.routers.rabbitmq.entrypoints=websecure"
       - "traefik.http.routers.rabbitmq.tls.certresolver=letsencrypt"
       - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
@@ -82,7 +82,7 @@ services:
           cpus: '0.5'
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.govconnect.my.id`)"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.genfity.com`)"
       - "traefik.http.routers.prometheus.entrypoints=websecure"
       - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
@@ -101,7 +101,7 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: https://grafana.govconnect.my.id
+      GF_SERVER_ROOT_URL: https://grafana.genfity.com
       GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-piechart-panel
       GF_LOG_LEVEL: warn
     volumes:
@@ -121,7 +121,7 @@ services:
           cpus: '0.5'
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.govconnect.my.id`)"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.genfity.com`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
