@@ -9,8 +9,15 @@
     }
   ],
   "vhosts": [
-    {"name": "/"},
-    {"name": "govconnect"}
+    {
+      "name": "/"
+    },
+    {
+      "name": "govconnect"
+    },
+    {
+      "name": "genfity"
+    }
   ],
   "permissions": [
     {
@@ -23,6 +30,13 @@
     {
       "user": "admin",
       "vhost": "govconnect",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "admin",
+      "vhost": "genfity",
       "configure": ".*",
       "write": ".*",
       "read": ".*"
@@ -68,6 +82,32 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {}
+    },
+    {
+      "name": "whatsapp.incoming",
+      "vhost": "genfity",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000,
+        "x-dead-letter-exchange": "dlx.genfity"
+      }
+    },
+    {
+      "name": "ai.process",
+      "vhost": "genfity",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "notification.send",
+      "vhost": "genfity",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
     }
   ],
   "exchanges": [
@@ -83,6 +123,24 @@
     {
       "name": "dlx.govconnect",
       "vhost": "govconnect",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "genfity.events",
+      "vhost": "genfity",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "dlx.genfity",
+      "vhost": "genfity",
       "type": "direct",
       "durable": true,
       "auto_delete": false,
@@ -121,6 +179,30 @@
       "destination": "case.update",
       "destination_type": "queue",
       "routing_key": "case.#",
+      "arguments": {}
+    },
+    {
+      "source": "genfity.events",
+      "vhost": "genfity",
+      "destination": "whatsapp.incoming",
+      "destination_type": "queue",
+      "routing_key": "whatsapp.#",
+      "arguments": {}
+    },
+    {
+      "source": "genfity.events",
+      "vhost": "genfity",
+      "destination": "ai.process",
+      "destination_type": "queue",
+      "routing_key": "ai.#",
+      "arguments": {}
+    },
+    {
+      "source": "genfity.events",
+      "vhost": "genfity",
+      "destination": "notification.send",
+      "destination_type": "queue",
+      "routing_key": "notification.#",
       "arguments": {}
     }
   ]
