@@ -49,12 +49,6 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.genfity.com`)"
-      - "traefik.http.routers.rabbitmq.entrypoints=websecure"
-      - "traefik.http.routers.rabbitmq.tls.certresolver=letsencrypt"
-      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
 
   # ===================================================================================
   # MONITORING - Prometheus
@@ -81,14 +75,6 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.genfity.com`)"
-      - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-      - "traefik.http.routers.prometheus.middlewares=prometheus-auth"
-      - "traefik.http.middlewares.prometheus-auth.basicauth.users=${PROMETHEUS_AUTH}"
 
   # ===================================================================================
   # VISUALIZATION - Grafana
@@ -120,12 +106,6 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.genfity.com`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   # ===================================================================================
   # LOGGING - Loki
@@ -201,12 +181,6 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin.rule=Host(`db.genfity.com`)"
-      - "traefik.http.routers.pgadmin.entrypoints=websecure"
-      - "traefik.http.routers.pgadmin.tls.certresolver=letsencrypt"
-      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
 
 # ===================================================================================
 # NETWORKS

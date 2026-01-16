@@ -37,12 +37,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.govconnect.my.id`)"
-        - "traefik.http.routers.rabbitmq.entrypoints=websecure"
-        - "traefik.http.routers.rabbitmq.tls.certresolver=letsencrypt"
-        - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
 
   # ===================================================================================
   # MONITORING - Prometheus
@@ -73,12 +67,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.prometheus.rule=Host(`prometheus.govconnect.my.id`)"
-        - "traefik.http.routers.prometheus.entrypoints=websecure"
-        - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
-        - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
 
   # ===================================================================================
   # VISUALIZATION - Grafana
@@ -106,12 +94,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.grafana.rule=Host(`grafana.govconnect.my.id`)"
-        - "traefik.http.routers.grafana.entrypoints=websecure"
-        - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
-        - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   # ===================================================================================
   # LOGGING - Loki

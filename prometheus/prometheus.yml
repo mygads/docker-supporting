@@ -51,11 +51,11 @@ scrape_configs:
     static_configs:
       - targets: ['rabbitmq:15692']
 
-  # Traefik
-  - job_name: 'traefik'
+  # Nginx (stub_status module)
+  - job_name: 'nginx'
     static_configs:
-      - targets: ['traefik:8080']
-    metrics_path: /metrics
+      - targets: ['nginx-proxy:80']
+    metrics_path: /stub_status
 
   # Loki
   - job_name: 'loki'
