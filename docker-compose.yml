@@ -1,0 +1,117 @@
+# ===================================================================================
+# SUPPORTING SERVICES
+# ===================================================================================
+#
+# Core Infrastructure:
+# - RabbitMQ: Message broker
+# - pgAdmin: Database management UI
+# - Redis: Cache, session store, rate limiting
+#
+# USAGE:
+#   docker compose up -d                    # Start all supporting services
+#   docker compose up -d rabbitmq redis     # Start specific services
+#
+# ===================================================================================
+
+services:
+  # =============================================================================
+  # MESSAGE BROKER - RabbitMQ
+  # =============================================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: govconnect
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # =============================================================================
+  # DATABASE ADMIN - pgAdmin
+  # =============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - infra-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # =============================================================================
+  # CACHE & SESSION STORE - Redis
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - infra-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+# ===================================================================================
+# NETWORKS
+# ===================================================================================
+networks:
+  infra-network:
+    external: true
+    name: infra-network
+
+# ===================================================================================
+# VOLUMES
+# ===================================================================================
+volumes:
+  rabbitmq-data:
+    name: rabbitmq-data
+  pgadmin-data:
+    name: pgadmin-data
+  redis-data:
+    name: redis-data

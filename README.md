@@ -1,302 +1,108 @@
-# Supporting Services - Optimized Stack
+# Supporting Services
 
-Infrastructure services untuk GovConnect dengan fokus pada **lightweight** dan **production-ready**.
+Infrastructure services untuk Genfity & GovConnect.
 
-## 🎯 Stack Overview
+## Stack Overview
 
 | Service | Port | Purpose | Memory Limit |
 |---------|------|---------|--------------|
 | **RabbitMQ** | 5672, 15672 | Message broker | 512 MB |
-| **Prometheus** | 9090 | Metrics collection | 512 MB |
-| **Grafana** | 3300 | Visualization | 512 MB |
-| **Loki** | 3101 | Log aggregation | 512 MB |
-| **Promtail** | - | Log collector | 256 MB |
-
-**Total Memory:** ~2.3 GB (vs ELK Stack ~4-6 GB) ✅
+| **pgAdmin** | 5050 | Database management UI | 512 MB |
+| **Redis** | 6379 | Cache, session store, rate limiting | 512 MB |
 
 ---
 
-## 🚀 Quick Start
-
-### 1. Setup Environment
+## Quick Start
 
 ```bash
 cd supporting
 cp .env.example .env
 # Edit .env dengan credentials
-```
 
-### 2. Start Services
-
-```bash
-# Start all services
 docker compose up -d
-
-# Start specific services
-docker compose up -d rabbitmq grafana
-
-# Check status
 docker compose ps
-
-# View logs
-docker compose logs -f loki
 ```
 
-### 3. Access UIs
+## Access
 
-- **RabbitMQ Management:** http://localhost:15672
-- **Prometheus:** http://localhost:9090
-- **Grafana:** http://localhost:3300
-- **Loki:** http://localhost:3101 (no UI, use Grafana)
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| RabbitMQ Management | http://localhost:15672 | admin / (see .env) |
+| pgAdmin | http://localhost:5050 | admin@genfity.com / (see .env) |
+| Redis | localhost:6379 | password di .env |
 
 ---
 
-## 📊 Service Details
+## Redis
 
-### 1. RabbitMQ (Message Broker)
+### Database Allocation
 
-**Purpose:** Event-driven communication antar services
+| DB | Purpose |
+|----|---------|
+| 0 | Default / general |
+| 1 | Sessions |
+| 2 | Cache |
+| 3 | Rate limiting |
 
-**Features:**
-- Virtual host: `govconnect`
-- Management UI enabled
-- Persistent storage
-- Health checks
+### Connection URLs
 
-**Usage:**
-```typescript
-// Connect from service
-const connection = await amqp.connect(process.env.RABBITMQ_URL);
-// RABBITMQ_URL=amqp://user:pass@rabbitmq:5672/govconnect
+```env
+# General
+REDIS_URL=redis://:PASSWORD@redis:6379/0
+
+# Per-database
+REDIS_SESSION_URL=redis://:PASSWORD@redis:6379/1
+REDIS_CACHE_URL=redis://:PASSWORD@redis:6379/2
 ```
 
-**Monitoring:**
-- Management UI: http://localhost:15672
-- Check queues, exchanges, connections
-- Monitor message rates
-
----
-
-### 2. Prometheus (Metrics)
-
-**Purpose:** Time-series database untuk metrics
-
-**Features:**
-- 7 days retention (optimized)
-- Auto-scrape GovConnect services
-- Metrics endpoint: `/metrics`
-
-**Scrape Targets:**
-- Prometheus itself
-- GovConnect services (channel, ai, case, notification, dashboard)
-- RabbitMQ
-- Traefik
-- Loki
-
-**Query Examples:**
-```promql
-# HTTP request rate
-rate(http_requests_total[5m])
-
-# Circuit breaker state
-circuit_breaker_state{service="case-service"}
-
-# Error rate
-rate(http_requests_total{status=~"5.."}[5m])
-```
-
-**Configuration:** `prometheus/prometheus.yml`
-
----
-
-### 3. Grafana (Visualization)
-
-**Purpose:** Dashboard untuk metrics dan logs
-
-**Features:**
-- Pre-configured data sources (Prometheus + Loki)
-- Dashboard provisioning
-- Alert support
-
-**Setup:**
-
-1. Login: http://localhost:3300
-   - Username: dari `GRAFANA_USER` di .env
-   - Password: dari `GRAFANA_PASSWORD` di .env
-
-2. Add Data Sources:
-   - **Prometheus:** http://prometheus:9090
-   - **Loki:** http://loki:3100
-
-3. Import Dashboards:
-   - Node.js Application Monitoring
-   - RabbitMQ Overview
-   - Loki Logs Explorer
-
-**Dashboard Locations:** `grafana/dashboards/`
-
----
-
-### 4. Loki (Centralized Logging)
-
-**Purpose:** Log aggregation (lightweight alternative to ELK)
-
-**Features:**
-- 7 days retention (optimized)
-- JSON log parsing
-- Label-based indexing
-- Grafana integration
-
-**Log Format:**
-```json
-{
-  "timestamp": "2024-12-08T10:30:00.000Z",
-  "level": "info",
-  "service": "channel-service",
-  "message": "Request completed",
-  "correlationId": "abc123",
-  "duration": 45
-}
-```
-
-**Query in Grafana:**
-```logql
-# All logs from service
-{service="channel-service"}
-
-# Error logs
-{service="channel-service"} |= "error"
-
-# Parse JSON and filter
-{service="channel-service"} | json | duration > 1000
-
-# Correlation ID tracking
-{service="channel-service"} | json | correlationId="abc123"
-```
-
-**Configuration:** `loki/loki-config.yml`
-
----
-
-### 5. Promtail (Log Collector)
-
-**Purpose:** Collect logs dari Docker containers dan kirim ke Loki
-
-**Features:**
-- Auto-discover Docker containers
-- Label extraction
-- JSON parsing
-- System log collection
-
-**Collected Logs:**
-- Docker container logs
-- GovConnect service logs
-- System logs (/var/log/syslog)
-- Auth logs (/var/log/auth.log)
-
-**Configuration:** `promtail/promtail-config.yml`
-
----
-
-## 🔧 Configuration
-
-### Resource Limits
-
-Semua services sudah di-set dengan resource limits untuk prevent memory leaks:
-
-```yaml
-deploy:
-  resources:
-    limits:
-      memory: 512M
-      cpus: '0.5'
-```
-
-### Retention Periods
-
-**Optimized untuk development/staging:**
-- Prometheus: 7 days
-- Loki: 7 days
-
-**Production (recommended):**
-- Prometheus: 30 days
-- Loki: 30 days
-
-Edit di:
-- `docker-compose.yml` (Prometheus: `--storage.tsdb.retention.time`)
-- `loki/loki-config.yml` (Loki: `retention_period`)
-
----
-
-## 📈 Monitoring Setup
-
-### 1. Expose Metrics in Services
-
-```typescript
-// Add to each service
-import { Router } from 'express';
-import { register } from 'prom-client';
-
-const router = Router();
-
-router.get('/metrics', async (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.send(await register.metrics());
-});
-
-export default router;
-```
-
-### 2. Use Structured Logger
-
-```typescript
-import { createLogger } from './shared/logger';
-
-const logger = createLogger('my-service', process.env.LOG_LEVEL);
-logger.info('Service started', { port: 3001 });
-```
-
-### 3. Verify Scraping
-
-Check Prometheus targets: http://localhost:9090/targets
-
-All targets should be **UP** (green).
-
----
-
-## 🐛 Troubleshooting
-
-### Service Won't Start
+### Verify Redis
 
 ```bash
-# Check logs
-docker compose logs <service-name>
+# Ping
+docker exec redis redis-cli -a YOUR_PASSWORD ping
 
-# Check if port is already in use
-netstat -tulpn | grep <port>
+# Info
+docker exec redis redis-cli -a YOUR_PASSWORD INFO memory
 
-# Restart service
-docker compose restart <service-name>
+# Monitor real-time
+docker exec -it redis redis-cli -a YOUR_PASSWORD MONITOR
 ```
 
-### Prometheus Not Scraping
+### Configuration
 
-1. Check service is exposing `/metrics`
-2. Verify service name in `prometheus.yml`
-3. Check network connectivity: `docker exec prometheus ping <service-name>`
+Redis config: `redis/redis.conf`
+- **Persistence**: AOF (primary) + RDB snapshots (backup)
+- **Memory limit**: 256MB with LRU eviction
+- **Security**: Dangerous commands (FLUSHDB, FLUSHALL, DEBUG) disabled
 
-### Loki Not Receiving Logs
+---
 
-1. Check Promtail is running: `docker compose ps promtail`
-2. Check Loki health: `curl http://localhost:3101/ready`
-3. Verify logs are JSON format
-4. Check Promtail logs: `docker compose logs promtail`
+## File Structure
 
-### High Memory Usage
+```
+supporting/
+├── docker-compose.yml
+├── .env / .env.example
+├── README.md
+├── pgadmin/
+│   └── servers.json
+├── rabbitmq/
+│   ├── rabbitmq.conf
+│   └── definitions.json
+└── redis/
+    └── redis.conf
+```
 
-1. Reduce retention periods
-2. Check for memory leaks in services
-3. Restart services: `docker compose restart`
+## Docker Networks
+
+- **infra-network**: Internal communication between supporting services
+- Services yang butuh Redis/RabbitMQ harus join `infra-network` atau di-connect manual
+
+```bash
+# Connect Redis ke app networks
+docker network connect genfity-network redis
+docker network connect govconnect-network redis
+```
 
 ### Grafana Can't Connect to Data Sources
 
